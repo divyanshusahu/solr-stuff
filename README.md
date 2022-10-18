@@ -1,0 +1,3 @@
+- Solr cluster
+- Solr indexer
+- gRPC server to query data from solr
