@@ -16,7 +16,6 @@ type RestClient struct {
 	Url            string
 	Timeout        time.Duration
 	requestHeaders map[string]string
-	requestCookies map[string]string
 	requestBody    *bytes.Reader
 }
 
@@ -39,13 +38,6 @@ func (rc *RestClient) AddRequestHeader(header string, value string) {
 		rc.requestHeaders = map[string]string{}
 	}
 	rc.requestHeaders[header] = value
-}
-
-func (rc *RestClient) AddRequestCookie(cookie string, value string) {
-	if rc.requestCookies == nil {
-		rc.requestCookies = map[string]string{}
-	}
-	rc.requestCookies[cookie] = value
 }
 
 func (rc *RestClient) AddRequestBody(body interface{}) {
@@ -82,6 +74,10 @@ func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		// TODO: add a log here
 		return nil, err
+	}
+
+	for k, v := range rc.requestHeaders {
+		req.Header.Set(k, v)
 	}
 
 	res, err := client.Do(req)
