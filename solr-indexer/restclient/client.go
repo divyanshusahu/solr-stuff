@@ -1,4 +1,4 @@
-package http
+package restclient
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"github.com/gojek/heimdall/v7/httpclient"
 )
 
-type HttpClient struct {
+type RestClient struct {
 	Method         string
 	Url            string
 	Timeout        time.Duration
@@ -20,12 +20,12 @@ type HttpClient struct {
 	requestBody    *bytes.Reader
 }
 
-func NewHttpClient(ctx context.Context, method string, url string, timeout time.Duration) HttpClient {
+func NewRestClient(ctx context.Context, method string, url string, timeout time.Duration) RestClient {
 	if method != "POST" {
 		method = "GET"
 	}
 
-	hc := HttpClient{
+	hc := RestClient{
 		Method:  method,
 		Url:     url,
 		Timeout: timeout,
@@ -34,21 +34,21 @@ func NewHttpClient(ctx context.Context, method string, url string, timeout time.
 	return hc
 }
 
-func (hc *HttpClient) AddRequestHeader(header string, value string) {
+func (hc *RestClient) AddRequestHeader(header string, value string) {
 	if hc.requestHeaders == nil {
 		hc.requestHeaders = map[string]string{}
 	}
 	hc.requestHeaders[header] = value
 }
 
-func (hc *HttpClient) AddRequestCookie(cookie string, value string) {
+func (hc *RestClient) AddRequestCookie(cookie string, value string) {
 	if hc.requestCookies == nil {
 		hc.requestCookies = map[string]string{}
 	}
 	hc.requestCookies[cookie] = value
 }
 
-func (hc *HttpClient) AddRequestBody(body interface{}) {
+func (hc *RestClient) AddRequestBody(body interface{}) {
 	data, err := json.Marshal(body)
 	if err != nil {
 		// TODO: add a log here
@@ -57,11 +57,11 @@ func (hc *HttpClient) AddRequestBody(body interface{}) {
 	hc.requestBody = bytes.NewReader(data)
 }
 
-func (hc *HttpClient) FetchResponse(ctx context.Context) ([]byte, error) {
+func (hc *RestClient) FetchResponse(ctx context.Context) ([]byte, error) {
 	return hc.getResponse(ctx)
 }
 
-func (hc *HttpClient) getResponse(ctx context.Context) ([]byte, error) {
+func (hc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 	if hc.Timeout == 0 {
 		hc.Timeout = 1000 * time.Millisecond
 	}
