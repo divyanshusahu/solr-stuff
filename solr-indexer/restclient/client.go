@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"solr-indexer/log"
 	"time"
 
 	"github.com/gojek/heimdall/v7/httpclient"
@@ -19,16 +21,8 @@ type RestClient struct {
 	requestBody    *bytes.Reader
 }
 
-func NewRestClient(ctx context.Context, method string, url string, timeout time.Duration) RestClient {
-	if method != "POST" {
-		method = "GET"
-	}
-
-	hc := RestClient{
-		Method:  method,
-		Url:     url,
-		Timeout: timeout,
-	}
+func NewRestClient(ctx context.Context) RestClient {
+	hc := RestClient{}
 
 	return hc
 }
@@ -43,7 +37,7 @@ func (rc *RestClient) AddRequestHeader(header string, value string) {
 func (rc *RestClient) AddRequestBody(body interface{}) {
 	data, err := json.Marshal(body)
 	if err != nil {
-		// TODO: add a log here
+		log.Logger.Error("error while marshalling post body - ", err)
 		data = nil
 	}
 	rc.requestBody = bytes.NewReader(data)
@@ -54,6 +48,11 @@ func (rc *RestClient) FetchResponse(ctx context.Context) ([]byte, error) {
 }
 
 func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
+	if rc.Url == "" {
+		log.Logger.Error("no url supplied to rest client")
+		return nil, fmt.Errorf("no url supplied to rest client")
+	}
+
 	if rc.Timeout == 0 {
 		rc.Timeout = 1000 * time.Millisecond
 	}
@@ -72,7 +71,7 @@ func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 	}
 
 	if err != nil {
-		// TODO: add a log here
+		log.Logger.Error("error creating http request - ", err)
 		return nil, err
 	}
 
@@ -82,13 +81,13 @@ func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		// TODO: add a log here
+		log.Logger.Errorw("error in http call", "rc", rc, "err", err)
 		return nil, err
 	}
 
 	response, err := io.ReadAll(res.Body)
 	if err != nil {
-		// TODO: add a log here
+		log.Logger.Errorw("error while reading response", "rc", rc, "err", err)
 		return nil, err
 	}
 
