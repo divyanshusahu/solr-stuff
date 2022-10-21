@@ -2,6 +2,7 @@ package tmdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"solr-indexer/log"
@@ -15,7 +16,7 @@ type TmdbClient struct {
 	client restclient.RestClient
 }
 
-func NewTmdbClient(ctx context.Context) (*TmdbClient, error) {
+func NewTmdbClient(ctx context.Context) *TmdbClient {
 	rc := restclient.NewRestClient(ctx)
 
 	apiKey := viper.GetString("TMDB_API_V3_KEY")
@@ -24,20 +25,31 @@ func NewTmdbClient(ctx context.Context) (*TmdbClient, error) {
 	rc.AddRequestHeader("Authorization", authToken)
 
 	tc := TmdbClient{client: rc}
-	return &tc, nil
+	return &tc
 }
 
-func (tc *TmdbClient) GetTopRatedMovies(ctx context.Context) {
+func (tc *TmdbClient) GetTopRatedMovies(ctx context.Context) (TopRatedMoviesResponse, error) {
+	var topRatedMoviesResponse TopRatedMoviesResponse
 	url, err := url.JoinPath(BASEURL, MoviesTopRatedPath)
 	if err != nil {
 		log.Logger.Errorw("error while joining url", "path", MoviesTopRatedPath, "err", err)
-		return
+		return topRatedMoviesResponse, fmt.Errorf("error while joining url")
 	}
 	timeout := time.Duration(timeoutMap[MoviesTopRatedPath]) * time.Millisecond
 	tc.client.Method = "GET"
 	tc.client.Url = url
+	tc.client.AddRequestParam("api_key", viper.GetString("TMDB_API_V3_KEY"))
 	tc.client.Timeout = timeout
 
-	response, err := tc.client.FetchResponse(ctx)
-	log.Logger.Info(response, err)
+	data, err := tc.client.FetchResponse(ctx)
+	if err != nil {
+		return topRatedMoviesResponse, err
+	}
+
+	err = json.Unmarshal(data, &topRatedMoviesResponse)
+	if err != nil {
+		log.Logger.Error("error while unmarshalling response - ", err)
+	}
+
+	return topRatedMoviesResponse, nil
 }
