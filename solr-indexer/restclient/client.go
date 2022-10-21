@@ -18,7 +18,7 @@ type RestClient struct {
 	Url            string
 	Timeout        time.Duration
 	requestHeaders map[string]string
-	requestBody    *bytes.Reader
+	requestParams  map[string]string
 }
 
 func NewRestClient(ctx context.Context) RestClient {
@@ -34,13 +34,11 @@ func (rc *RestClient) AddRequestHeader(header string, value string) {
 	rc.requestHeaders[header] = value
 }
 
-func (rc *RestClient) AddRequestBody(body interface{}) {
-	data, err := json.Marshal(body)
-	if err != nil {
-		log.Logger.Error("error while marshalling post body - ", err)
-		data = nil
+func (rc *RestClient) AddRequestParam(key string, value string) {
+	if rc.requestParams == nil {
+		rc.requestParams = map[string]string{}
 	}
-	rc.requestBody = bytes.NewReader(data)
+	rc.requestParams[key] = value
 }
 
 func (rc *RestClient) FetchResponse(ctx context.Context) ([]byte, error) {
@@ -64,12 +62,14 @@ func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 	switch rc.Method {
 	case "GET":
 		req, err = http.NewRequest(rc.Method, rc.Url, nil)
+		if req != nil && err == nil {
+			rc.addQueryParams(req)
+		}
 	case "POST":
-		req, err = http.NewRequest(rc.Method, rc.Url, rc.requestBody)
+		req, err = http.NewRequest(rc.Method, rc.Url, rc.addPostBody())
 	default:
 		req, err = http.NewRequest(rc.Method, rc.Url, nil)
 	}
-
 	if err != nil {
 		log.Logger.Error("error creating http request - ", err)
 		return nil, err
@@ -79,11 +79,15 @@ func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 		req.Header.Set(k, v)
 	}
 
+	log.Logger.Info(req)
+
 	res, err := client.Do(req)
 	if err != nil {
 		log.Logger.Errorw("error in http call", "rc", rc, "err", err)
 		return nil, err
 	}
+
+	log.Logger.Info(res.StatusCode, res.Body)
 
 	response, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -92,4 +96,20 @@ func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 	}
 
 	return response, nil
+}
+
+func (rc *RestClient) addQueryParams(req *http.Request) {
+	q := req.URL.Query()
+	for k, v := range rc.requestParams {
+		q.Add(k, v)
+	}
+	req.URL.RawQuery = q.Encode()
+}
+
+func (rc *RestClient) addPostBody() *bytes.Buffer {
+	data, err := json.Marshal(rc.requestParams)
+	if err != nil {
+		log.Logger.Error("error while marshalling post body - ", err)
+	}
+	return bytes.NewBuffer(data)
 }
