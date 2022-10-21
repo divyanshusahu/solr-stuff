@@ -34,49 +34,49 @@ func NewRestClient(ctx context.Context, method string, url string, timeout time.
 	return hc
 }
 
-func (hc *RestClient) AddRequestHeader(header string, value string) {
-	if hc.requestHeaders == nil {
-		hc.requestHeaders = map[string]string{}
+func (rc *RestClient) AddRequestHeader(header string, value string) {
+	if rc.requestHeaders == nil {
+		rc.requestHeaders = map[string]string{}
 	}
-	hc.requestHeaders[header] = value
+	rc.requestHeaders[header] = value
 }
 
-func (hc *RestClient) AddRequestCookie(cookie string, value string) {
-	if hc.requestCookies == nil {
-		hc.requestCookies = map[string]string{}
+func (rc *RestClient) AddRequestCookie(cookie string, value string) {
+	if rc.requestCookies == nil {
+		rc.requestCookies = map[string]string{}
 	}
-	hc.requestCookies[cookie] = value
+	rc.requestCookies[cookie] = value
 }
 
-func (hc *RestClient) AddRequestBody(body interface{}) {
+func (rc *RestClient) AddRequestBody(body interface{}) {
 	data, err := json.Marshal(body)
 	if err != nil {
 		// TODO: add a log here
 		data = nil
 	}
-	hc.requestBody = bytes.NewReader(data)
+	rc.requestBody = bytes.NewReader(data)
 }
 
-func (hc *RestClient) FetchResponse(ctx context.Context) ([]byte, error) {
-	return hc.getResponse(ctx)
+func (rc *RestClient) FetchResponse(ctx context.Context) ([]byte, error) {
+	return rc.getResponse(ctx)
 }
 
-func (hc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
-	if hc.Timeout == 0 {
-		hc.Timeout = 1000 * time.Millisecond
+func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
+	if rc.Timeout == 0 {
+		rc.Timeout = 1000 * time.Millisecond
 	}
-	client := httpclient.NewClient(httpclient.WithHTTPTimeout(hc.Timeout))
+	client := httpclient.NewClient(httpclient.WithHTTPTimeout(rc.Timeout))
 
 	var req *http.Request
 	var err error
 
-	switch hc.Method {
+	switch rc.Method {
 	case "GET":
-		req, err = http.NewRequest(hc.Method, hc.Url, nil)
+		req, err = http.NewRequest(rc.Method, rc.Url, nil)
 	case "POST":
-		req, err = http.NewRequest(hc.Method, hc.Url, hc.requestBody)
+		req, err = http.NewRequest(rc.Method, rc.Url, rc.requestBody)
 	default:
-		req, err = http.NewRequest(hc.Method, hc.Url, nil)
+		req, err = http.NewRequest(rc.Method, rc.Url, nil)
 	}
 
 	if err != nil {
