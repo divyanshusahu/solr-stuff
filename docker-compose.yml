@@ -6,9 +6,12 @@ services:
       - "50000:8983"
     volumes:
       - ./solr/data:/var/solr
-    command: ["solr-precreate", "moviesdb"]
+      - ./solr/config:/tmp/solr
+    command: ["solr-precreate", "moviesdb", "/tmp/solr"]
+    container_name: solr
 
   redis:
     image: redis:7.0-alpine
     ports:
-      - "50001:6379"
+      - "50100:6379"
+    container_name: redis
