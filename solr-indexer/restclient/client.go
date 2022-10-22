@@ -19,6 +19,7 @@ type RestClient struct {
 	Timeout        time.Duration
 	requestHeaders map[string]string
 	requestParams  map[string]string
+	requestBody    interface{}
 }
 
 func NewRestClient(ctx context.Context) RestClient {
@@ -41,14 +42,18 @@ func (rc *RestClient) AddRequestParam(key string, value string) {
 	rc.requestParams[key] = value
 }
 
+func (rc *RestClient) AddRequestBody(body interface{}) {
+	rc.requestBody = body
+}
+
 func (rc *RestClient) FetchResponse(ctx context.Context) ([]byte, error) {
 	return rc.getResponse(ctx)
 }
 
 func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 	if rc.Url == "" {
-		log.Logger.Error("no url supplied to rest client")
-		return nil, fmt.Errorf("no url supplied to rest client")
+		log.Logger.Error("no url supplied to the rest client")
+		return nil, fmt.Errorf("no url supplied to the rest client")
 	}
 
 	if rc.Timeout == 0 {
@@ -79,20 +84,21 @@ func (rc *RestClient) getResponse(ctx context.Context) ([]byte, error) {
 		req.Header.Set(k, v)
 	}
 
-	log.Logger.Info(req)
-
 	res, err := client.Do(req)
 	if err != nil {
 		log.Logger.Errorw("error in http call", "rc", rc, "err", err)
 		return nil, err
 	}
 
-	log.Logger.Info(res.StatusCode, res.Body)
-
 	response, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Logger.Errorw("error while reading response", "rc", rc, "err", err)
 		return nil, err
+	}
+
+	if res.StatusCode >= 400 {
+		log.Logger.Warnf("non success response code returned from the server. StatusCode: %v", res.StatusCode)
+		log.Logger.Infof("rc: %v and response: %v", rc, string(response))
 	}
 
 	return response, nil
@@ -107,9 +113,16 @@ func (rc *RestClient) addQueryParams(req *http.Request) {
 }
 
 func (rc *RestClient) addPostBody() *bytes.Buffer {
-	data, err := json.Marshal(rc.requestParams)
+	var data []byte
+	var err error
+	if rc.requestBody != nil {
+		data, err = json.Marshal(rc.requestBody)
+	} else {
+		data, err = json.Marshal(rc.requestParams)
+	}
 	if err != nil {
 		log.Logger.Error("error while marshalling post body - ", err)
 	}
+
 	return bytes.NewBuffer(data)
 }
