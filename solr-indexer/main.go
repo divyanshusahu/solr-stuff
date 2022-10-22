@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"solr-indexer/log"
 
 	"github.com/spf13/viper"
@@ -17,7 +17,8 @@ func main() {
 		return
 	}
 
-	fmt.Println(viper.GetString("TMDB_API_V3_KEY"))
+	ctx := context.Background()
+	indexer(ctx)
 }
 
 func initConfig() error {
