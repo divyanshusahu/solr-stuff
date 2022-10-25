@@ -4,9 +4,9 @@ type MovieListObject struct {
 	PosterPath       string  `json:"poster_path"`
 	Adult            bool    `json:"adult"`
 	Overview         string  `json:"overview"`
-	ReleaseData      string  `json:"release_date"`
+	ReleaseDate      string  `json:"release_date"`
 	GenreIds         []int   `json:"genre_ids"`
-	Id               int     `json:"ids"`
+	Id               int     `json:"id"`
 	OriginalTitle    string  `json:"original_title"`
 	OriginalLanguage string  `json:"original_language"`
 	Title            string  `json:"title"`
