@@ -28,7 +28,7 @@ func NewTmdbClient(ctx context.Context) *TmdbClient {
 	return &tc
 }
 
-func (tc *TmdbClient) GetTopRatedMovies(ctx context.Context) (TopRatedMoviesResponse, error) {
+func (tc *TmdbClient) GetTopRatedMovies(ctx context.Context, page string) (TopRatedMoviesResponse, error) {
 	var topRatedMoviesResponse TopRatedMoviesResponse
 	url, err := url.JoinPath(BASEURL, MoviesTopRatedPath)
 	if err != nil {
@@ -39,6 +39,7 @@ func (tc *TmdbClient) GetTopRatedMovies(ctx context.Context) (TopRatedMoviesResp
 	tc.client.Method = "GET"
 	tc.client.Url = url
 	tc.client.AddRequestParam("api_key", viper.GetString("TMDB_API_V3_KEY"))
+	tc.client.AddRequestParam("page", page)
 	tc.client.Timeout = timeout
 
 	data, err := tc.client.FetchResponse(ctx)
